@@ -1,0 +1,108 @@
+<div class="wrap">
+	<h1>{{ __('SES Options', 'aws-auto-ses') }}</h1>
+
+{% if region %}
+	<p>{{ __("Using AWS region <b>%s</b>.", 'aws-auto-ses')|format(region|e)|raw }}</p>
+
+	{% if identityVerificationError.code == 'AccessDenied' %}
+		<p><i>{{ __("Not authorized to verify the sender email.", 'aws-auto-ses')|raw }}</i></p>
+	{% elseif identityVerificationError %}
+		<div class="error"><p>{{ identityVerificationError.message }}</p></div>
+	{% else %}
+		{% if identityVerification.verified and identityVerification.scope == 'email' %}
+			<p>{{ __("Sender <b>%s</b> is verified.", 'aws-auto-ses')|format(identityVerification.email|e)|raw }}</p>
+		{% elseif identityVerification.verified and identityVerification.scope == 'domain' %}
+			<p>{{ __("Sender <b>%s</b>'s domain is verified.", 'aws-auto-ses')|format(identityVerification.email|e)|raw }}</p>
+		{% else %}
+			<div class="error"><p>{{ __("The sender email <b>%s</b> is not verified for use in SES. Please verify it or its domain or use the sender address option to change the address used.", 'aws-auto-ses')|format(identityVerification.email|e)|raw }}</p></div>
+		{% endif %}
+	{% endif %}
+
+	<form action="options-general.php?page=aws-auto-ses-options" method="POST">
+		<input type="hidden" name="action" value="{{ enabled ? 'disable' : 'enable' }}">
+		<input type="hidden" name="_wpnonce" value="{{ nonce }}">
+		{% if enable.error %}
+			<div class="error"><p>{{ enable.error }}</p></div>
+		{% endif %}
+	{% if enabled %}
+		{{ submit_button(__('Disable SES', 'aws-auto-ses'), 'secondary', 'submit', true, canEnable ?: {'disabled': true})|raw }}
+	{% else %}
+		{% if canEnable %}
+			<p>A test email will be sent to your address to verify that SES works.</p>
+		{% endif %}
+		{{ submit_button(__('Enable SES', 'aws-auto-ses'), 'primary', 'submit', true, canEnable ?: {'disabled': true})|raw }}
+	{% endif %}
+	</form>
+
+	<form method="POST" action="options.php">
+		{{ settings_fields('aws-auto-ses-settings')|raw }}
+
+		{{ do_settings_sections('aws-auto-ses-options')|raw }}
+
+		{{ submit_button()|raw }}
+	</form>
+
+	<h2>Identities</h3>
+	{% if identityRequestError.code == 'AccessDenied' %}
+		<p>{{ __("Grant <code>ses:ListIdentities</code> to this server's role to see this list.", 'aws-auto-ses')|raw }}</p>
+	{% elseif identityRequestError %}
+		<div class="error"><p>{{ identityRequestError.message }}</p></div>
+	{% else %}
+		<table class="widefat">
+			<thead>
+				<tr>
+					<th>{{ __("Identity", 'aws-auto-ses') }}</th>
+					<th>{{ __("Type", 'aws-auto-ses') }}</th>
+					<th>{{ __("Verification status", 'aws-auto-ses') }}</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for identity in identities %}
+				<tr>
+					<td>{{ identity.text }}</td>
+					<td>{{ identity.type }}</td>
+					<td>{{ identity.verified|default('Unknown') }}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+			<thead>
+				<tr>
+					<td colspan="3">
+						{% if moreIdentities %}
+						<small>
+							{{ __('There are more verified identities. Visit the <a href="%s">dashboard</a> to see the rest.', 'aws-auto-ses')|format(dashboardLink|e('html_attr'))|raw }}
+						</small>
+						{% else %}
+						<small>
+							{{ __('Visit the <a href="%s">dashboard</a> to remove or verify new identities.', 'aws-auto-ses')|format(dashboardLink|e('html_attr'))|raw }}
+						</small>
+						{% endif %}
+					</td>
+				</tr>
+			</thead>
+		</table>
+	{% endif %}
+
+	<h2 id="send-test-email">Send test email</h2>
+	{% if testemail %}
+	{% if testemail.result %}
+		<div class="notice"><p>{{ __("Test email sent successfully.", 'aws-auto-ses') }}</p></div>
+	{% else %}
+		<div class="error">
+			<p>{{ __("Failed to send test email:", 'aws-auto-ses') }}</p>
+			<p>{{ testemail.error }}</p>
+		</div>
+	{% endif %}
+	{% endif %}
+
+	<form action="options-general.php?page=aws-auto-ses-options#send-test-email" method="POST">
+		<input type="hidden" name="action" value="sendtestemail">
+		<input type="hidden" name="_wpnonce" value="{{ nonce }}">
+		<input class="regular-text ltr" type="email" name="to" value="{{ useremail }}" />
+		{{ submit_button(__('Send', 'aws-auto-ses'), 'primary', 'submit', false)|raw }}
+	</form>
+
+{% else %}
+	<div class="error"><p>{{ __("This plugin must be run from an EC2 server.", 'aws-auto-ses') }}</p></div>
+{% endif %}
+</div>

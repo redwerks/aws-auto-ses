@@ -1,0 +1,9 @@
+{
+    "require": {
+        "aws/aws-sdk-php": "^3.3",
+        "twig/twig": "^1.20"
+    },
+    "autoload": {
+        "classmap": ["inc/"]
+    }
+}
