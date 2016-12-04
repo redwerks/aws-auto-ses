@@ -304,8 +304,7 @@ if ( is_admin() ) {
 						);
 					}
 
-					global $current_user;
-					get_currentuserinfo();
+					$current_user = wp_get_current_user();
 					$options['useremail'] = $current_user->user_email;
 
 					if ( $_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'sendtestemail' && check_admin_referer(__FILE__) ) {
